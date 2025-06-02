@@ -1,22 +1,73 @@
 version: '3.8'
 services:
-  thingsboard:
-    image: thingsboard/tb-postgres:latest
-    restart: always
+  thingsboard-ce:
+    image: thingsboard/tb-postgres:3.6.3
+    restart: unless-stopped
+    networks:
+      - coolify
     environment:
-      TB_QUEUE_TYPE: in-memory
+      TB_QUEUE_TYPE: kafka
       HTTP_BIND_PORT: 9090
-      SERVICE_FQDN_THINGSBOARD_9090 # Variável mágica do Coolify
-    volumes:
-      - tb-data:/data
-      - tb-logs:/var/log/thingsboard
+      SERVICE_FQDN_THINGSBOARD_9090
+      LOAD_DEMO: "false"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://tb-postgres:5432/thingsboard
+      SPRING_DATASOURCE_USERNAME: thingsboard
+      SPRING_DATASOURCE_PASSWORD: thingsboard_secret
+      CASSANDRA_CLUSTER_NAME: ThingsBoard Cluster
+      CASSANDRA_KEYSPACE_NAME: thingsboard
     expose:
       - "9090"
       - "1883"
-    ports:
-      - "1883:1883"
-      - "5683-5688:5683-5688/udp"
+    volumes:
+      - tb-data:/data
+      - tb-logs:/var/log/thingsboard
+    depends_on:
+      - tb-postgres
+      - tb-kafka
+
+  tb-postgres:
+    image: postgres:15
+    restart: unless-stopped
+    networks:
+      - coolify
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_USER: thingsboard
+      POSTGRES_PASSWORD: thingsboard_secret
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thingsboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tb-kafka:
+    image: bitnami/kafka:3.4
+    restart: unless-stopped
+    networks:
+      - coolify
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@tb-kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://tb-kafka:9092
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    volumes:
+      - kafka-data:/bitnami/kafka
 
 volumes:
   tb-data:
+    driver: local
   tb-logs:
+    driver: local
+  postgres-data:
+    driver: local
+  kafka-data:
+    driver: local
+
+networks:
+  coolify:
+    external: true
