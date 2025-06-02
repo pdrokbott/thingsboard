@@ -1,69 +1,22 @@
 version: '3.8'
-
 services:
   thingsboard:
     image: thingsboard/tb-postgres:latest
     restart: always
     environment:
-      - TB_QUEUE_TYPE=${TB_QUEUE_TYPE:-in-memory}
-      - TB_DB_HOST=${TB_DB_HOST:-postgres}
-      - TB_DB_PORT=${TB_DB_PORT:-5432}
-      - TB_DB_NAME=${TB_DB_NAME:-thingsboard}
-      - TB_DB_USERNAME=${TB_DB_USERNAME:-postgres}
-      - TB_DB_PASSWORD=${TB_DB_PASSWORD:-postgres}
-      - HTTP_BIND_PORT=${HTTP_BIND_PORT:-9090}
-      - SERVICE_FQDN_THINGSBOARD  # Vai herdar o domínio definido no Coolify
-    depends_on:
-      postgres:
-        condition: service_healthy
+      TB_QUEUE_TYPE: in-memory
+      HTTP_BIND_PORT: 9090
+      SERVICE_FQDN_THINGSBOARD_9090 # Variável mágica do Coolify
     volumes:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
-    labels:
-      # Informa ao Coolify (e ao Traefik gerenciado pelo Coolify) qual porta interna usar
-      - coolify.service.port=9090
-      # Define o domínio público que o Traefik deve usar para expor o ThingsBoard
-      - coolify.domains=${SERVICE_FQDN_THINGSBOARD}
-
-      # --- A seguir, labels diretas do Traefik (opcional, mas garante HTTPS e redirecionamento) ---
-      - "traefik.enable=true"
-
-      # 1) Roteador HTTP (porta 80) só para redirecionar para HTTPS
-      - "traefik.http.routers.thingsboard-http.rule=Host(`${SERVICE_FQDN_THINGSBOARD}`)"
-      - "traefik.http.routers.thingsboard-http.entrypoints=web"
-      - "traefik.http.routers.thingsboard-http.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-
-      # 2) Roteador HTTPS (porta 443) → encaminha para o container na porta 9090
-      - "traefik.http.routers.thingsboard-https.rule=Host(`${SERVICE_FQDN_THINGSBOARD}`)"
-      - "traefik.http.routers.thingsboard-https.entrypoints=websecure"
-      - "traefik.http.routers.thingsboard-https.tls=true"
-      - "traefik.http.routers.thingsboard-https.tls.certresolver=coolify"
-
-      # 3) Diz ao Traefik qual porta interna do ThingsBoard (9090) deve receber o tráfego
-      - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  postgres:
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-thingsboard}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    expose:
+      - "9090"
+      - "1883"
+    ports:
+      - "1883:1883"
+      - "5683-5688:5683-5688/udp"
 
 volumes:
   tb-data:
   tb-logs:
-  postgres-data:
