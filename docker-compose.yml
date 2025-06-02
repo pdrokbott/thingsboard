@@ -11,20 +11,20 @@ services:
       - TB_DB_USERNAME=${TB_DB_USERNAME:-postgres}
       - TB_DB_PASSWORD=${TB_DB_PASSWORD:-postgres}
       - HTTP_BIND_PORT=${HTTP_BIND_PORT:-9090}
-      # Se você ainda estiver usando SERVICE_FQDN_THINGSBOARD, troque pelo seu domínio:
-      - SERVICE_FQDN_THINGSBOARD=http://tb.hydradev.com.br
+      - SERVICE_FQDN_THINGSBOARD
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
     labels:
       - traefik.enable=true
-      - traefik.http.services.thingsboard.loadbalancer.server.port=9090
-      # Mude a regra Host() para usar tb.hydradev.com.br
       - traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)
-      - traefik.http.routers.thingsboard.entrypoints=web,websecure
-      - traefik.http.routers.thingsboard.tls.certresolver=coolify
+      - traefik.http.routers.thingsboard.entrypoints=websecure
+      - traefik.http.routers.thingsboard.tls.certresolver=letsencrypt
+      - traefik.http.services.thingsboard.loadbalancer.server.port=9090
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
 
   postgres:
     image: postgres:15-alpine
@@ -35,6 +35,11 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   tb-data:
