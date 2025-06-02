@@ -3,13 +3,8 @@ services:
   thingsboard:
     image: thingsboard/tb-postgres:latest
     restart: always
-
-    # → Mapeamento de porta para testes pelo IP (host:7070 → container:9090)
     ports:
       - "7070:9090"
-      # (Opcional) você pode expor também a porta 8080, se quiser:
-      # - "8080:9090"
-
     environment:
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE:-in-memory}
       - TB_DB_HOST=${TB_DB_HOST:-postgres}
@@ -18,23 +13,23 @@ services:
       - TB_DB_USERNAME=${TB_DB_USERNAME:-postgres}
       - TB_DB_PASSWORD=${TB_DB_PASSWORD:-postgres}
       - HTTP_BIND_PORT=${HTTP_BIND_PORT:-9090}
-
     depends_on:
       - postgres
-
     volumes:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
 
+    # ===== Aqui você diz ao Traefik (usado pelo Coolify) que
+    #      este container deve ser exposto como serviço HTTP,
+    #      e qual porta interna ele realmente “escuta”:
     labels:
-      - traefik.enable=true
-      # Roteia tudo que chegar em tb.hydradev.com.br → para porta interna 9090
-      - traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)
-      - traefik.http.routers.thingsboard.entrypoints=web
-      # se quiser HTTPS automático, comente a linha acima e descomente estas:
-      # - traefik.http.routers.thingsboard.entrypoints=websecure
-      # - traefik.http.routers.thingsboard.tls.certresolver=letsencrypt
-      - traefik.http.services.thingsboard.loadbalancer.server.port=9090
+      - "traefik.enable=true"
+      - "traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)"
+      - "traefik.http.routers.thingsboard.entrypoints=web,websecure"
+      - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
+      # (opcional) para forçar HTTPS redirecionando HTTP → HTTPS:
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.thingsboard.middlewares=redirect-to-https@docker"
 
   postgres:
     image: postgres:15-alpine
