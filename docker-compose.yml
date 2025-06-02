@@ -4,7 +4,7 @@ services:
     image: thingsboard/tb-postgres:latest
     restart: always
     ports:
-      - "9080:9080"
+      - "9090:9090"
     environment:
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE:-in-memory}
       - TB_DB_HOST=${TB_DB_HOST:-postgres}
