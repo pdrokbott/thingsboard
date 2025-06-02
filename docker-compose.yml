@@ -3,9 +3,8 @@ services:
   thingsboard:
     image: thingsboard/tb-postgres:latest
     restart: always
-    ports:
-      - "7070:9090"
     environment:
+      - SERVICE_FQDN_THINGSBOARD  # Geração automática de domínio
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE:-in-memory}
       - TB_DB_HOST=${TB_DB_HOST:-postgres}
       - TB_DB_PORT=${TB_DB_PORT:-5432}
@@ -18,18 +17,6 @@ services:
     volumes:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
-
-    # ===== Aqui você diz ao Traefik (usado pelo Coolify) que
-    #      este container deve ser exposto como serviço HTTP,
-    #      e qual porta interna ele realmente “escuta”:
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)"
-      - "traefik.http.routers.thingsboard.entrypoints=web,websecure"
-      - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
-      # (opcional) para forçar HTTPS redirecionando HTTP → HTTPS:
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.routers.thingsboard.middlewares=redirect-to-https@docker"
 
   postgres:
     image: postgres:15-alpine
