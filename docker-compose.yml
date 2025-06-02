@@ -2,7 +2,7 @@ version: '3'
 
 services:
   thingsboard:
-    build: .
+    image: thingsboard/tb-postgres:3.9.1
     ports:
       - "8080:8080"
     environment:
