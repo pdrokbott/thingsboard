@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   thingsboard:
     image: thingsboard/tb-postgres:latest
@@ -11,7 +12,7 @@ services:
       - TB_DB_USERNAME=${TB_DB_USERNAME:-postgres}
       - TB_DB_PASSWORD=${TB_DB_PASSWORD:-postgres}
       - HTTP_BIND_PORT=${HTTP_BIND_PORT:-9090}
-      - SERVICE_FQDN_THINGSBOARD
+      - SERVICE_FQDN_THINGSBOARD  # Variável mágica do Coolify
     depends_on:
       postgres:
         condition: service_healthy
@@ -19,12 +20,13 @@ services:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)
-      - traefik.http.routers.thingsboard.entrypoints=websecure
-      - traefik.http.routers.thingsboard.tls.certresolver=letsencrypt
-      - traefik.http.services.thingsboard.loadbalancer.server.port=9090
-      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - coolify.service.port=9090  # Porta exposta do container
+      - coolify.domains=${SERVICE_FQDN_THINGSBOARD}  # Domínio dinâmico
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   postgres:
     image: postgres:15-alpine
