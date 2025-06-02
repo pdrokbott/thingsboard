@@ -4,7 +4,6 @@ services:
     image: thingsboard/tb-postgres:latest
     restart: always
     environment:
-      - SERVICE_FQDN_THINGSBOARD  # Geração automática de domínio
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE:-in-memory}
       - TB_DB_HOST=${TB_DB_HOST:-postgres}
       - TB_DB_PORT=${TB_DB_PORT:-5432}
@@ -12,11 +11,20 @@ services:
       - TB_DB_USERNAME=${TB_DB_USERNAME:-postgres}
       - TB_DB_PASSWORD=${TB_DB_PASSWORD:-postgres}
       - HTTP_BIND_PORT=${HTTP_BIND_PORT:-9090}
+      # Se você ainda estiver usando SERVICE_FQDN_THINGSBOARD, troque pelo seu domínio:
+      - SERVICE_FQDN_THINGSBOARD=http://tb.hydradev.com.br
     depends_on:
       - postgres
     volumes:
       - tb-data:/data
       - tb-logs:/var/log/thingsboard
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.thingsboard.loadbalancer.server.port=9090
+      # Mude a regra Host() para usar tb.hydradev.com.br
+      - traefik.http.routers.thingsboard.rule=Host(`tb.hydradev.com.br`)
+      - traefik.http.routers.thingsboard.entrypoints=web,websecure
+      - traefik.http.routers.thingsboard.tls.certresolver=coolify
 
   postgres:
     image: postgres:15-alpine
