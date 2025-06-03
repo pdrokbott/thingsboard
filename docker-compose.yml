@@ -25,6 +25,7 @@ services:
       - LWM2M_BIND_PORT=5685
       - SNMP_ENABLED=true
       - SNMP_BIND_PORT=162
+      - LOAD_DEMO=false
     depends_on:
       - kafka
       - redis
