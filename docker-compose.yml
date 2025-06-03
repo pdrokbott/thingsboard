@@ -13,6 +13,8 @@ services:
       - HTTP_BIND_PORT=9090
     depends_on:
       - postgres
+    ports:
+      - "9090:9090"       # <— expõe a porta 9090 do container para a 9090 do host
     
   postgres:
     image: postgres:15-alpine
