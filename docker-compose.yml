@@ -7,17 +7,18 @@ services:
     restart: always
     environment:
       - SERVICE_FQDN_THINGSBOARD_9090
-      - TB_QUEUE_TYPE=kafka
+      - TB_BASE_URL=${TB_BASE_URL}
+      - TB_QUEUE_TYPE=${TB_QUEUE_TYPE}
       - TB_QUEUE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - TB_KAFKA_SERVERS=kafka:9092
-      - TB_CACHE_REDIS_HOST=redis
-      - TB_CACHE_REDIS_PORT=6379
+      - TB_KAFKA_SERVERS=${TB_KAFKA_SERVERS}
+      - TB_CACHE_REDIS_HOST=${TB_CACHE_REDIS_HOST}
+      - TB_CACHE_REDIS_PORT=${TB_CACHE_REDIS_PORT}
       - TB_DB_HOST=postgres
       - TB_DB_PORT=5432
-      - TB_DB_NAME=thingsboard
-      - TB_DB_USERNAME=postgres
+      - TB_DB_NAME=${POSTGRES_DB}
+      - TB_DB_USERNAME=${POSTGRES_USER}
       - TB_DB_PASSWORD=${POSTGRES_PASSWORD}
-      - HTTP_BIND_PORT=9090
+      - HTTP_BIND_PORT=${HTTP_BIND_PORT}
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
       - COAP_ENABLED=true
@@ -43,11 +44,12 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
-      - "traefik.http.routers.thingsboard.entrypoints=https"
-      - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.thingsboard.entrypoints=websecure"
       - "traefik.http.routers.thingsboard.tls=true"
+      - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
       - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
       - "traefik.http.routers.thingsboard-ws.rule=Host(`tb.smart-byte.dev`) && PathPrefix(`/api/ws`)"
+      - "traefik.http.routers.thingsboard-ws.entrypoints=websecure"
       - "traefik.http.services.thingsboard-ws.loadbalancer.server.port=8080"
 
   postgres:
