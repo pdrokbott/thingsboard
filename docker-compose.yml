@@ -66,10 +66,7 @@ services:
     networks:
       - coolify
     healthcheck:
-      test: ["CMD", "echo ruok | nc localhost 2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      disable: true
 
   kafka:
     image: bitnami/kafka:3.7.0
