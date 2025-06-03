@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb:latest
+    image: thingsboard/tb:3.9.1
     restart: always
     environment:
       - TB_BASE_URL=${TB_BASE_URL}
@@ -11,7 +11,6 @@ services:
       - TB_KAFKA_SERVERS=${TB_KAFKA_SERVERS}
       - TB_CACHE_REDIS_HOST=${TB_CACHE_REDIS_HOST}
       - TB_CACHE_REDIS_PORT=${TB_CACHE_REDIS_PORT}
-      - SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
@@ -48,6 +47,11 @@ services:
       - "traefik.http.services.tb-ws-service.loadbalancer.server.port=8080"
       - "traefik.http.routers.tb-ws.middlewares=tb-ws-headers"
       - "traefik.http.middlewares.tb-ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   zookeeper:
     image: bitnami/zookeeper:3.8
@@ -108,7 +112,7 @@ services:
       retries: 5
 
   tb-js-executor:
-    image: thingsboard/tb-js-executor:latest
+    image: thingsboard/tb-js-executor:3.9.1
     restart: always
     environment:
       - REMOTE_JS_EVAL_REQUEST_TOPIC=js.eval.requests
