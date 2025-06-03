@@ -3,21 +3,20 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb-postgres:latest
+    image: thingsboard/tb:3.9.1
     restart: always
     environment:
       - TB_BASE_URL=${TB_BASE_URL}
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE}
-      - TB_QUEUE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - TB_KAFKA_SERVERS=${TB_KAFKA_SERVERS}
       - TB_CACHE_REDIS_HOST=${TB_CACHE_REDIS_HOST}
       - TB_CACHE_REDIS_PORT=${TB_CACHE_REDIS_PORT}
-      - TB_DB_HOST=host.docker.internal
-      - TB_DB_PORT=5432
-      - TB_DB_NAME=thingsboard
-      - TB_DB_USERNAME=postgres
-      - TB_DB_PASSWORD=tb_admin
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/thingsboard
+      - SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT}
+      - SPRING_DATASOURCE_MAXIMUM_POOL_SIZE=${SPRING_DATASOURCE_MAXIMUM_POOL_SIZE}
       - HTTP_BIND_PORT=${HTTP_BIND_PORT}
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
@@ -27,21 +26,13 @@ services:
       - LWM2M_BIND_PORT=5685
       - SNMP_ENABLED=true
       - SNMP_BIND_PORT=162
-    ports:
-      - "1883:1883"
-      - "8883:8883"
-      - "5683:5683/udp"
-      - "5685:5685/udp"
-      - "162:162/udp"
-    cap_add:
-      - NET_ADMIN
     depends_on:
       - kafka
       - redis
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - coolify
+    cap_add:
+      - NET_ADMIN
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
@@ -59,7 +50,7 @@ services:
       - "traefik.http.middlewares.tb-ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
 
   zookeeper:
-    image: bitnami/zookeeper:latest
+    image: bitnami/zookeeper:3.8
     restart: always
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
@@ -68,7 +59,7 @@ services:
     networks:
       - coolify
     healthcheck:
-      test: ["CMD", "echo", "ru", "|", "nc", "localhost", "2181"]
+      test: ["CMD", "echo ruok | nc localhost 2181"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -110,12 +101,23 @@ services:
       - redis_data:/data
     networks:
       - coolify
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   tb-js-executor:
-    image: thingsboard/tb-js-executor:latest
+    image: thingsboard/tb-js-executor:3.9.1
     restart: always
-    env_file:
-      - tb-js-executor.env
+    environment:
+      - REMOTE_JS_EVAL_REQUEST_TOPIC=js.eval.requests
+      - REMOTE_JS_EVAL_RESPONSE_TOPIC=js.eval.responses
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - LOGGER_LEVEL=info
+      - LOG_FOLDER=logs
+      - MAX_CPU_TIME=2000
+      - MAX_ERRORS=3
     depends_on:
       kafka:
         condition: service_healthy
