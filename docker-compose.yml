@@ -6,7 +6,6 @@ services:
     image: thingsboard/tb-postgres:latest
     restart: always
     environment:
-      - SERVICE_FQDN_THINGSBOARD_9090
       - TB_BASE_URL=${TB_BASE_URL}
       - TB_QUEUE_TYPE=${TB_QUEUE_TYPE}
       - TB_QUEUE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -28,7 +27,6 @@ services:
       - SNMP_ENABLED=true
       - SNMP_BIND_PORT=162
     ports:
-      - "9090:9090"
       - "1883:1883"
       - "8883:8883"
       - "5683:5683/udp"
@@ -44,14 +42,19 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
-      - "traefik.http.routers.thingsboard.entrypoints=websecure"
-      - "traefik.http.routers.thingsboard.tls=true"
-      - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
-      - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
-      - "traefik.http.routers.thingsboard-ws.rule=Host(`tb.smart-byte.dev`) && PathPrefix(`/api/ws`)"
-      - "traefik.http.routers.thingsboard-ws.entrypoints=websecure"
-      - "traefik.http.services.thingsboard-ws.loadbalancer.server.port=8080"
+      - "traefik.docker.network=coolify"
+      - "traefik.http.routers.tb-http.rule=Host(`tb.smart-byte.dev`)"
+      - "traefik.http.routers.tb-http.entrypoints=websecure"
+      - "traefik.http.routers.tb-http.tls=true"
+      - "traefik.http.routers.tb-http.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.tb-http.service=tb-http-service"
+      - "traefik.http.services.tb-http-service.loadbalancer.server.port=9090"
+      - "traefik.http.routers.tb-ws.rule=Host(`tb.smart-byte.dev`) && PathPrefix(`/api/ws`)"
+      - "traefik.http.routers.tb-ws.entrypoints=websecure"
+      - "traefik.http.routers.tb-ws.service=tb-ws-service"
+      - "traefik.http.services.tb-ws-service.loadbalancer.server.port=8080"
+      - "traefik.http.routers.tb-ws.middlewares=tb-ws-headers"
+      - "traefik.http.middlewares.tb-ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
 
   postgres:
     image: postgres:15-alpine
