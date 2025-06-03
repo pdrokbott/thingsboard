@@ -72,6 +72,11 @@ services:
       - zookeeper_data:/bitnami/zookeeper
     networks:
       - coolify
+    healthcheck:
+      test: ["CMD", "echo", "ru", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: bitnami/kafka:3.7.0
