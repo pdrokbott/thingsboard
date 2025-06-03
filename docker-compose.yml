@@ -6,6 +6,7 @@ services:
     image: thingsboard/tb-postgres:latest
     restart: always
     environment:
+      - SERVICE_FQDN_THINGSBOARD_9090
       - TB_QUEUE_TYPE=kafka
       - TB_QUEUE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - TB_KAFKA_SERVERS=kafka:9092
@@ -79,12 +80,8 @@ services:
       - zookeeper
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_PROCESS_ROLES=broker
-      - KAFKA_BROKER_ID=1
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
     volumes:
       - kafka_data:/bitnami/kafka
     networks:
