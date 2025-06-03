@@ -73,7 +73,7 @@ services:
     networks:
       - coolify
 
-    kafka:
+  kafka:
     image: bitnami/kafka:3.7.0
     restart: unless-stopped
     depends_on:
@@ -111,7 +111,7 @@ services:
     networks:
       - coolify
 
-    tb-js-executor:
+  tb-js-executor:
     image: thingsboard/tb-js-executor:latest
     restart: always
     env_file:
