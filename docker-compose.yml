@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb:3.9.1
+    image: thingsboard/tb:3.9
     restart: always
     environment:
       - TB_BASE_URL=${TB_BASE_URL}
