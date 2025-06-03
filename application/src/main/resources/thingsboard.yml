@@ -7,7 +7,7 @@
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
+# Unless required by applicable law or agreed to in writing, register-mbeans:
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
@@ -816,7 +816,7 @@ spring:
       # This property increases the number of connections in the pool as demand increases. At the same time, the property ensures that the pool doesn't grow to the point of exhausting a system's resources, which ultimately affects an application's performance and availability
       maximumPoolSize: "${SPRING_DATASOURCE_MAXIMUM_POOL_SIZE:16}"
       # Enable MBean to diagnose pools state via JMX
-      registerMbeans: "${SPRING_DATASOURCE_HIKARI_REGISTER_MBEANS:false}"
+      # registerMbeans: "${SPRING_DATASOURCE_HIKARI_REGISTER_MBEANS:false}"
     events:
       # Enable dedicated datasource (a separate database) for events and audit logs.
       # Before enabling this, make sure you have set up the following tables in the new DB:
