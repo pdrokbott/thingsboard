@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb:3.6
+    image: thingsboard/tb-postgres:latest
     restart: always
     environment:
       - TB_BASE_URL=${TB_BASE_URL}
@@ -32,6 +32,9 @@ services:
       - coolify
     cap_add:
       - NET_ADMIN
+    volumes:
+      - mytb_data:/data
+      - mytb_logs:/var/log/thingsboard
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
@@ -112,7 +115,7 @@ services:
       retries: 5
 
   tb-js-executor:
-    image: thingsboard/tb-js-executor:3.6
+    image: thingsboard/tb-js-executor:latest
     restart: always
     environment:
       - REMOTE_JS_EVAL_REQUEST_TOPIC=js.eval.requests
@@ -132,6 +135,10 @@ volumes:
   zookeeper_data:
   kafka_data:
   redis_data:
+  mytb_data:
+    driver: local
+  mytb_logs:
+    driver: local
 
 networks:
   coolify:
