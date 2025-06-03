@@ -3,28 +3,53 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb-postgres
+    image: thingsboard/tb-postgres:latest
     restart: always
     environment:
-      - SERVICE_FQDN_THINGSBOARD_9090  # ← ESSENCIAL para o Coolify reconhecer como app web
-      - TB_QUEUE_TYPE=in-memory
+      - SERVICE_FQDN_THINGSBOARD_9090
+      - TB_QUEUE_TYPE=kafka
+      - TB_QUEUE_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TB_KAFKA_SERVERS=kafka:9092
+      - TB_CACHE_REDIS_HOST=redis
+      - TB_CACHE_REDIS_PORT=6379
       - TB_DB_HOST=postgres
       - TB_DB_PORT=5432
       - TB_DB_NAME=thingsboard
       - TB_DB_USERNAME=postgres
       - TB_DB_PASSWORD=${POSTGRES_PASSWORD}
       - HTTP_BIND_PORT=9090
+      - MQTT_ENABLED=true
+      - MQTT_BIND_PORT=1883
+      - COAP_ENABLED=true
+      - COAP_BIND_PORT=5683
+      - LWM2M_ENABLED=true
+      - LWM2M_BIND_PORT=5685
+      - SNMP_ENABLED=true
+      - SNMP_BIND_PORT=162
+    ports:
+      - "9090:9090"
+      - "1883:1883"
+      - "8883:8883"
+      - "5683:5683/udp"
+      - "5685:5685/udp"
+      - "162:162/udp"
+    cap_add:
+      - NET_ADMIN
     depends_on:
       - postgres
+      - kafka
+      - redis
     networks:
-      - coolify  # ← ALTERADO
+      - coolify
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
-      - "traefik.http.routers.thingsboard.entrypoints=https"  # ← ALTERADO
+      - "traefik.http.routers.thingsboard.entrypoints=https"
       - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.thingsboard.tls=true"
       - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
+      - "traefik.http.routers.thingsboard-ws.rule=Host(`tb.smart-byte.dev`) && PathPrefix(`/api/ws`)"
+      - "traefik.http.services.thingsboard-ws.loadbalancer.server.port=8080"
 
   postgres:
     image: postgres:15-alpine
@@ -36,11 +61,57 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - coolify  # ← ALTERADO
+      - coolify
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    restart: always
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
+    networks:
+      - coolify
+
+  kafka:
+    image: bitnami/kafka:latest
+    restart: always
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - coolify
+
+  redis:
+    image: redis:alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - coolify
+
+  tb-js-executor:
+    image: thingsboard/tb-js-executor:latest
+    restart: always
+    env_file:
+      - tb-js-executor.env
+    depends_on:
+      - kafka
+    networks:
+      - coolify
 
 volumes:
   postgres_data:
+  zookeeper_data:
+  kafka_data:
+  redis_data:
 
 networks:
-  coolify:  # ← ALTERADO
+  coolify:
     external: true
