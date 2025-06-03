@@ -2,21 +2,40 @@ version: '3.8'
 
 services:
 
-  thingsboard:
-    image: thingsboard/tb-postgres:latest
+  postgres:
+    image: postgres:16-alpine
     restart: always
     environment:
-      - TB_BASE_URL=${TB_BASE_URL}
-      - TB_QUEUE_TYPE=${TB_QUEUE_TYPE}
-      - TB_KAFKA_SERVERS=${TB_KAFKA_SERVERS}
-      - TB_CACHE_REDIS_HOST=${TB_CACHE_REDIS_HOST}
-      - TB_CACHE_REDIS_PORT=${TB_CACHE_REDIS_PORT}
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT}
-      - SPRING_DATASOURCE_MAXIMUM_POOL_SIZE=${SPRING_DATASOURCE_MAXIMUM_POOL_SIZE}
-      - HTTP_BIND_PORT=${HTTP_BIND_PORT}
+      - POSTGRES_DB=thingsboard
+      - POSTGRES_USER=tb_admin
+      - POSTGRES_PASSWORD=tb_admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coolify
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tb_admin -d thingsboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  thingsboard:
+    image: thingsboard/tb-postgres:3.9.1
+    restart: always
+    environment:
+      - TB_BASE_URL=https://tb.smart-byte.dev
+      - TB_QUEUE_TYPE=kafka
+      - TB_KAFKA_SERVERS=kafka:9092
+      - TB_CACHE_REDIS_HOST=redis
+      - TB_CACHE_REDIS_PORT=6379
+      - LOAD_DEMO=false
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/thingsboard
+      - SPRING_DATASOURCE_USERNAME=tb_admin
+      - SPRING_DATASOURCE_PASSWORD=tb_admin
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
+      - HTTP_BIND_PORT=9090
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
       - COAP_ENABLED=true
@@ -25,10 +44,13 @@ services:
       - LWM2M_BIND_PORT=5685
       - SNMP_ENABLED=true
       - SNMP_BIND_PORT=162
-      - LOAD_DEMO=false
     depends_on:
-      - kafka
-      - redis
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - coolify
     cap_add:
@@ -104,7 +126,7 @@ services:
   redis:
     image: redis:alpine
     restart: always
-    command: redis-server --requirepass ${REDIS_PASSWORD}
+    command: redis-server --requirepass tb_admin
     volumes:
       - redis_data:/data
     networks:
@@ -133,6 +155,7 @@ services:
       - coolify
 
 volumes:
+  postgres_data:
   zookeeper_data:
   kafka_data:
   redis_data:
