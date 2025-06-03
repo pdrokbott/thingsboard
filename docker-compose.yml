@@ -1,30 +1,143 @@
-version: '3'
+version: '3.8'
+
+
+
 services:
-  thingsboard:
-    image: thingsboard/tb-postgres
-    restart: always
-    environment:
-      - TB_QUEUE_TYPE=in-memory
-      - TB_DB_HOST=postgres
-      - TB_DB_PORT=5432
-      - TB_DB_NAME=thingsboard
-      - TB_DB_USERNAME=postgres
-      - TB_DB_PASSWORD=${POSTGRES_PASSWORD}
-      - HTTP_BIND_PORT=9090
-    depends_on:
-      - postgres
+
+  traefik:
+
+    image: traefik:v3.1
+
+    container_name: traefik
+
+    restart: unless-stopped
+
+    command:
+
+      - "--api.dashboard=true"
+
+      - "--providers.docker=true"
+
+      - "--providers.docker.exposedbydefault=false"
+
+      - "--entrypoints.web.address=:80"
+
+      - "--entrypoints.websecure.address=:443"
+
+      - "--certificatesresolvers.letsencrypt.acme.email=seu-email@example.com"
+
+      - "--certificatesresolvers.letsencrypt.acme.storage=/acme.json"
+
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+
     ports:
-      - "9090:9090"       # <— expõe a porta 9090 do container para a 9090 do host
-    
-  postgres:
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      - POSTGRES_DB=thingsboard
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+      - "80:80"
+
+      - "443:443"
+
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+      - "./traefik/acme.json:/acme.json"
+
+    networks:
+
+      - thingsboard-network
+
+    labels:
+
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.smart-byte.dev`)"
+
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+
+      - "traefik.http.routers.dashboard.service=api@internal"
+
+
+
+  thingsboard:
+
+    image: thingsboard/tb-postgres
+
+    restart: always
+
+    environment:
+
+      - TB_QUEUE_TYPE=in-memory
+
+      - TB_DB_HOST=postgres
+
+      - TB_DB_PORT=5432
+
+      - TB_DB_NAME=thingsboard
+
+      - TB_DB_USERNAME=postgres
+
+      - TB_DB_PASSWORD=${POSTGRES_PASSWORD}
+
+      - HTTP_BIND_PORT=9090
+
+    depends_on:
+
+      - postgres
+
+    networks:
+
+      - thingsboard-network
+
+    labels:
+
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
+
+      - "traefik.http.routers.thingsboard.entrypoints=websecure"
+
+      - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
+
+      - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
+
+      
+
+  postgres:
+
+    image: postgres:15-alpine
+
+    restart: always
+
+    environment:
+
+      - POSTGRES_DB=thingsboard
+
+      - POSTGRES_USER=postgres
+
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+    volumes:
+
+      - postgres_data:/var/lib/PostgreSQL/data
+
+    networks:
+
+      - thingsboard-network
+
+
 
 volumes:
+
   postgres_data:
+
+
+
+networks:
+
+  thingsboard-network:
+
+    driver: bridge
