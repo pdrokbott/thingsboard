@@ -2,25 +2,8 @@ version: '3.8'
 
 services:
 
-  postgres:
-    image: postgres:16-alpine
-    restart: always
-    environment:
-      - POSTGRES_DB=thingsboard
-      - POSTGRES_USER=tb_admin
-      - POSTGRES_PASSWORD=tb_admin
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - coolify
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tb_admin -d thingsboard"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   thingsboard:
-    image: thingsboard/tb-postgres:3.4.2
+    image: thingsboard/tb:3.4.2
     restart: always
     environment:
       - TB_BASE_URL=https://tb.smart-byte.dev
@@ -29,7 +12,7 @@ services:
       - TB_CACHE_REDIS_HOST=redis
       - TB_CACHE_REDIS_PORT=6379
       - LOAD_DEMO=false
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/thingsboard
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://mc0w8owcw008s4ws4g8c4os4:5432/thingsboard?sslmode=require
       - SPRING_DATASOURCE_USERNAME=tb_admin
       - SPRING_DATASOURCE_PASSWORD=tb_admin
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
@@ -45,8 +28,6 @@ services:
       - SNMP_ENABLED=true
       - SNMP_BIND_PORT=162
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
@@ -155,7 +136,6 @@ services:
       - coolify
 
 volumes:
-  postgres_data:
   zookeeper_data:
   kafka_data:
   redis_data:
