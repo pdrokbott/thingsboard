@@ -20,7 +20,7 @@ services:
       retries: 10
 
   thingsboard:
-    image: thingsboard/tb-postgres:3.9.1
+    image: thingsboard/tb-postgres:3.4.2
     restart: always
     environment:
       - TB_BASE_URL=https://tb.smart-byte.dev
@@ -33,17 +33,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=tb_admin
       - SPRING_DATASOURCE_PASSWORD=tb_admin
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
-      - SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT=30000
-      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=20
-      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=5
-      - SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT=600000
-      - SPRING_DATASOURCE_HIKARI_MAX_LIFETIME=1800000
-      - SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD=60000
-      - SPRING_DATASOURCE_HIKARI_POOL_NAME=TB_${HOSTNAME}_${RANDOM}
-      - SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT=60000
+      - SPRING_DATASOURCE_HIKARI_REGISTER_MBEANS=false
       - SPRING_JMX_ENABLED=false
-      - SPRING_JMX_DEFAULT_DOMAIN=thingsboard_${HOSTNAME}
-      - JAVA_OPTS=-Dcom.sun.management.jmxremote=false -Djava.rmi.server.hostname=localhost
       - HTTP_BIND_PORT=9090
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
