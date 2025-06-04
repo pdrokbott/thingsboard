@@ -3,7 +3,7 @@ version: '3.8'
 services:
 
   thingsboard:
-    image: thingsboard/tb:3.4.2
+    image: thingsboard/tb:3.6.3
     restart: always
     environment:
       - TB_BASE_URL=https://tb.smart-byte.dev
