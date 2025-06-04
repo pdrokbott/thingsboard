@@ -42,7 +42,7 @@ services:
       - SPRING_DATASOURCE_HIKARI_POOL_NAME=TB_${HOSTNAME}_${RANDOM}
       - SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT=60000
       # O parâmetro abaixo pode não ser suportado em todas as versões do Spring/Hikari, mas pode ser testado
-      # - SPRING_DATASOURCE_HIKARI_SEALED_CONFIG_OVERRIDE=true
+      - SPRING_DATASOURCE_HIKARI_SEALED_CONFIG_OVERRIDE=true
       - SPRING_JMX_ENABLED=false
       - SPRING_JMX_DEFAULT_DOMAIN=thingsboard_${HOSTNAME}
       - SPRING_DATASOURCE_HIKARI_REGISTER_MBEANS=false
