@@ -58,6 +58,7 @@ services:
     volumes:
       - mytb_data:/data
       - mytb_logs:/var/log/thingsboard
+      - ./thingsboard.yml:/config/thingsboard.yml  # <-- Bind do seu arquivo customizado!
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
