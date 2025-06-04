@@ -44,22 +44,25 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
+      # Roteamento principal (Web UI, API e healthcheck via Traefik)
       - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
       - "traefik.http.routers.thingsboard.entrypoints=https"
       - "traefik.http.routers.thingsboard.tls=true"
       - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.thingsboard.service=thingsboard"
       - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
+      # Healthcheck do Traefik aponta para /login (que sempre retorna 200)
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.path=/login"
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.interval=30s"
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.timeout=5s"
-      # Opcional: Middlewares de segurança
+      # Segurança e rate limiting (opcional, mas recomendado)
       - "traefik.http.routers.thingsboard.middlewares=security-headers"
       - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9090/login"]
+      # Usando wget, pois curl pode não existir por padrão na imagem
+      test: ["CMD", "wget", "-O-", "http://localhost:9090/login"]
       interval: 30s
       timeout: 10s
       retries: 5
