@@ -20,6 +20,7 @@ services:
       - SPRING_JMX_ENABLED=false
       - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.thingsboard.server.dao.ThingsboardPostgreSQLDialect
       - HTTP_BIND_PORT=9090
+      # Protocolos industriais HABILITADOS, mas NÃO expostos publicamente (sem section "ports"):
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
       - COAP_ENABLED=true
@@ -43,20 +44,27 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
+      # HTTP principal
       - "traefik.http.routers.tb-http.rule=Host(`tb.smart-byte.dev`)"
       - "traefik.http.routers.tb-http.entrypoints=https"
       - "traefik.http.routers.tb-http.tls=true"
       - "traefik.http.routers.tb-http.tls.certresolver=letsencrypt"
       - "traefik.http.routers.tb-http.service=tb-http-service"
       - "traefik.http.services.tb-http-service.loadbalancer.server.port=9090"
+      # WebSockets
       - "traefik.http.routers.tb-ws.rule=Host(`tb.smart-byte.dev`) && PathPrefix(`/api/ws`)"
       - "traefik.http.routers.tb-ws.entrypoints=https"
       - "traefik.http.routers.tb-ws.service=tb-ws-service"
-      - "traefik.http.services.tb-ws-service.loadbalancer.server.port=8080"
+      - "traefik.http.services.tb-ws-service.loadbalancer.server.port=9090"
       - "traefik.http.routers.tb-ws.middlewares=tb-ws-headers"
       - "traefik.http.middlewares.tb-ws-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      # Middlewares de segurança (opcional, recomendado)
+      - "traefik.http.routers.tb-http.middlewares=security-headers"
+      - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:9090/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
