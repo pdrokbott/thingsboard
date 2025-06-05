@@ -1,6 +1,37 @@
 version: '3.8'
 
 services:
+  traefik:
+    image: traefik:v3.4
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.https.address=:443"
+      - "--entrypoints.mqtt.address=:1883"
+      - "--entrypoints.mqtt-secure.address=:8883"
+      - "--entrypoints.coap.address=:5683/udp"
+      - "--entrypoints.lwm2m.address=:5685/udp"
+      - "--entrypoints.snmp.address=:162/udp"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=http"
+      - "--certificatesresolvers.letsencrypt.acme.email=pedroantoniooliveir@hotmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "1883:1883"      # MQTT
+      - "8883:8883"      # MQTT Secure
+      - "5683:5683/udp"  # CoAP
+      - "5685:5685/udp"  # LwM2M
+      - "162:162/udp"    # SNMP
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - coolify
 
   thingsboard:
     image: thingsboard/tb-postgres:3.8.1
@@ -20,7 +51,6 @@ services:
       - SPRING_JMX_ENABLED=false
       - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.thingsboard.server.dao.ThingsboardPostgreSQLDialect
       - HTTP_BIND_PORT=9090
-      # Protocolos industriais HABILITADOS, mas NÃO expostos publicamente (sem section "ports"):
       - MQTT_ENABLED=true
       - MQTT_BIND_PORT=1883
       - COAP_ENABLED=true
@@ -44,24 +74,45 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=coolify"
-      # Roteamento principal (Web UI, API e healthcheck via Traefik)
+      # Web UI, API e healthcheck via Traefik (HTTPS)
       - "traefik.http.routers.thingsboard.rule=Host(`tb.smart-byte.dev`)"
       - "traefik.http.routers.thingsboard.entrypoints=https"
       - "traefik.http.routers.thingsboard.tls=true"
       - "traefik.http.routers.thingsboard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.thingsboard.service=thingsboard"
       - "traefik.http.services.thingsboard.loadbalancer.server.port=9090"
-      # Healthcheck do Traefik aponta para /login (que sempre retorna 200)
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.path=/login"
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.interval=30s"
       - "traefik.http.services.thingsboard.loadbalancer.healthcheck.timeout=5s"
-      # Segurança e rate limiting (opcional, mas recomendado)
+      # MQTT TCP
+      - "traefik.tcp.routers.tb-mqtt.entrypoints=mqtt"
+      - "traefik.tcp.routers.tb-mqtt.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.tb-mqtt.service=tb-mqtt"
+      - "traefik.tcp.services.tb-mqtt.loadbalancer.server.port=1883"
+      # MQTT TLS (ajuste se ativar TLS para MQTT)
+      - "traefik.tcp.routers.tb-mqtts.entrypoints=mqtt-secure"
+      - "traefik.tcp.routers.tb-mqtts.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.tb-mqtts.tls=true"
+      - "traefik.tcp.routers.tb-mqtts.service=tb-mqtts"
+      - "traefik.tcp.services.tb-mqtts.loadbalancer.server.port=1883"
+      # CoAP UDP
+      - "traefik.udp.routers.tb-coap.entrypoints=coap"
+      - "traefik.udp.routers.tb-coap.service=tb-coap"
+      - "traefik.udp.services.tb-coap.loadbalancer.server.port=5683"
+      # LwM2M UDP
+      - "traefik.udp.routers.tb-lwm2m.entrypoints=lwm2m"
+      - "traefik.udp.routers.tb-lwm2m.service=tb-lwm2m"
+      - "traefik.udp.services.tb-lwm2m.loadbalancer.server.port=5685"
+      # SNMP UDP
+      - "traefik.udp.routers.tb-snmp.entrypoints=snmp"
+      - "traefik.udp.routers.tb-snmp.service=tb-snmp"
+      - "traefik.udp.services.tb-snmp.loadbalancer.server.port=162"
+      # Segurança e rate limiting (opcional)
       - "traefik.http.routers.thingsboard.middlewares=security-headers"
       - "traefik.http.middlewares.security-headers.headers.frameDeny=true"
       - "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.rate-limit.ratelimit.average=100"
     healthcheck:
-      # Usando wget, pois curl pode não existir por padrão na imagem
       test: ["CMD", "wget", "-O-", "http://localhost:9090/login"]
       interval: 30s
       timeout: 10s
