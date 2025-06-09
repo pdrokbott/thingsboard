@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   thingsboard:
-    image: thingsboard/tb-postgres:3.8.1
+    image: pedrooliveiraleonel/thingsboard-custom:4.0.1
     restart: always
     environment:
       - TB_BASE_URL=https://tb.smart-byte.dev
