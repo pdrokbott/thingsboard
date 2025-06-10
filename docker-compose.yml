@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   thingsboard:
-    image: pedrooliveiraleonel/thingsboard-custom:4.0.1
+    image: pedrooliveiraleonel/tb-custom:4.0.1-logo
     restart: always
     environment:
       - TB_BASE_URL=https://tb.smart-byte.dev
